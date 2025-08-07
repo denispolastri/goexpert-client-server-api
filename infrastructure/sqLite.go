@@ -1,14 +1,17 @@
 package infrastructure
 
 import (
+	"goexpert-client-server-api/types"
+
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
-func NewSqliteDb() {
-	db, err := gorm.Open(sqlite.Open("sqlite.db"), &gorm.Config{})
+func NewSqliteDb() (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open("infrastructure/db/sqlite.db"), &gorm.Config{})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	db.AutoMigrate()
+	db.AutoMigrate(&types.Dollar{})
+	return db, nil
 }
