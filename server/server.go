@@ -3,22 +3,37 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"goexpert-client-server-api/infrastructure"
-	"goexpert-client-server-api/types"
+	"goexpert-client-server-api/client"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
 )
+
+type Dollar struct {
+	gorm.Model
+	Code      string `json:"code"`
+	CodeIn    string `json:"codeIn"`
+	Name      string `json:"name"`
+	High      string `json:"high"`
+	Low       string `json:"low"`
+	VarBid    string `json:"varBid"`
+	PctChange string `json:"pctChange"`
+	Bid       string `json:"bid"`
+	Ask       string `json:"ask"`
+	Timestamp string `json:"timestamp"`
+}
+
+type DollarBR struct {
+	USDBRL Dollar `json:"USDBRL"`
+}
 
 const urlDolar string = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
 
-func InitServer() {
-	http.HandleFunc("/cotacao", ConsultaCotacao)
-	http.ListenAndServe(":8080", nil)
-}
-
 // Consulta a cotação do dolar
-func ConsultaCotacao(w http.ResponseWriter, r *http.Request) {
+func ConsultaCotacaoSiteEconomia(w http.ResponseWriter, r *http.Request) {
 
 	request, err := http.Get(urlDolar)
 	if err != nil {
@@ -29,7 +44,7 @@ func ConsultaCotacao(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "erro ao ler resposta: %v\n", err)
 	}
-	var data types.DollarBR
+	var data DollarBR
 	err = json.Unmarshal(response, &data)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "erro ao fazer o parse da resposta: %v\n", err)
@@ -42,10 +57,10 @@ func ConsultaCotacao(w http.ResponseWriter, r *http.Request) {
 }
 
 // Faz gravação da cotação no banco de dados
-func GravaCotacao(data types.Dollar) {
+func GravaCotacao(data Dollar) {
 
 	// Inicializa o banco de dados
-	db, err := infrastructure.NewSqliteDb()
+	db, err := NewSqliteDb()
 	if err != nil {
 		panic(err)
 	}
@@ -56,12 +71,23 @@ func GravaCotacao(data types.Dollar) {
 		panic("erro ao inserir dados: " + err.Error())
 	}
 
-	var currency []types.Dollar
+	var currency []Dollar
 
 	db.Find(&currency)
 	for _, dollar := range currency {
 		fmt.Println(dollar.Bid)
 	}
 
+	client.LeDolarBancoDeDados()
+
 	fmt.Println("fim do processamento")
+}
+
+func NewSqliteDb() (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open("server/sqlite.db"), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+	db.AutoMigrate(&Dollar{})
+	return db, nil
 }

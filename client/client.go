@@ -5,7 +5,8 @@ import (
 	"net/http"
 )
 
-func LeDolar() {
+func LeDolarBancoDeDados() {
+
 	requisicao, err := http.Get("http://localhost:8080/cotacao")
 	if err != nil {
 		panic(err)
