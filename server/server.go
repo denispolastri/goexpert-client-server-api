@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"goexpert-client-server-api/client"
 	"io"
 	"net/http"
 	"os"
@@ -78,9 +77,6 @@ func GravaCotacao(data Dollar) {
 		fmt.Println(dollar.Bid)
 	}
 
-	client.LeDolarBancoDeDados()
-
-	fmt.Println("fim do processamento")
 }
 
 func NewSqliteDb() (*gorm.DB, error) {
