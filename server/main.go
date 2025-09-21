@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"encoding/json"
@@ -10,6 +10,17 @@ import (
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
+
+func main() {
+
+	// Define valor HTTP_PORT
+	httpPort := "8080"
+	//
+	http.HandleFunc("/cotacao", ConsultaCotacaoSiteEconomia)
+	fmt.Println("Server HTTP UP port " + httpPort)
+	http.ListenAndServe(":"+httpPort, nil)
+
+}
 
 type Dollar struct {
 	gorm.Model
@@ -53,6 +64,11 @@ func ConsultaCotacaoSiteEconomia(w http.ResponseWriter, r *http.Request) {
 	// Grava os dados no banco de dados
 	GravaCotacao(data.USDBRL)
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(data.USDBRL)
+
 }
 
 // Faz gravação da cotação no banco de dados
@@ -80,7 +96,7 @@ func GravaCotacao(data Dollar) {
 }
 
 func NewSqliteDb() (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open("server/sqlite.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("sqlite.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
