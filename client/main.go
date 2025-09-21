@@ -46,11 +46,11 @@ func LeDolarBancoDeDados() {
 		panic(err)
 	}
 
-	var data DollarBR
-	err = json.Unmarshal(response, &data)
+	var bid string
+	err = json.Unmarshal(response, &bid)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "erro ao fazer o parse da resposta: %v\n", err)
 	}
-	fmt.Println(data.USDBRL)
+	fmt.Println(bid)
 
 }

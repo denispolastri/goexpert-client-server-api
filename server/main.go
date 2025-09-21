@@ -6,21 +6,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
-
-func main() {
-
-	// Define valor HTTP_PORT
-	httpPort := "8080"
-	//
-	http.HandleFunc("/cotacao", ConsultaCotacaoSiteEconomia)
-	fmt.Println("Server HTTP UP port " + httpPort)
-	http.ListenAndServe(":"+httpPort, nil)
-
-}
 
 type Dollar struct {
 	gorm.Model
@@ -35,12 +25,22 @@ type Dollar struct {
 	Ask       string `json:"ask"`
 	Timestamp string `json:"timestamp"`
 }
-
 type DollarBR struct {
 	USDBRL Dollar `json:"USDBRL"`
 }
 
 const urlDolar string = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
+
+func main() {
+
+	// Define valor HTTP_PORT
+	httpPort := "8080"
+	//
+	http.HandleFunc("/cotacao", ConsultaCotacaoSiteEconomia)
+	fmt.Println("Server HTTP UP port " + httpPort)
+	http.ListenAndServe(":"+httpPort, nil)
+
+}
 
 // Consulta a cotação do dolar
 func ConsultaCotacaoSiteEconomia(w http.ResponseWriter, r *http.Request) {
@@ -59,15 +59,13 @@ func ConsultaCotacaoSiteEconomia(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "erro ao fazer o parse da resposta: %v\n", err)
 	}
-	fmt.Println(data.USDBRL.Bid)
-
 	// Grava os dados no banco de dados
 	GravaCotacao(data.USDBRL)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(data.USDBRL)
+	json.NewEncoder(w).Encode(data.USDBRL.Bid)
 
 }
 
@@ -80,17 +78,32 @@ func GravaCotacao(data Dollar) {
 		panic(err)
 	}
 
-	// Grava os dados no banco
-	err = db.Create(&data).Error
-	if err != nil {
-		panic("erro ao inserir dados: " + err.Error())
-	}
+	var currencys []Dollar
+	db.Find(&currencys)
+	fmt.Println("existem " + strconv.Itoa(len(currencys)) + " moedas cadastradas no banco")
 
-	var currency []Dollar
-
-	db.Find(&currency)
-	for _, dollar := range currency {
-		fmt.Println(dollar.Bid)
+	if len(currencys) == 0 {
+		// Grava a moeda se o banco estiver vazio
+		err = db.Create(&data).Error
+		if err != nil {
+			panic("erro ao inserir dados: " + err.Error())
+		}
+	} else {
+		for _, cur := range currencys {
+			if cur.Bid == data.Bid {
+				// Altera no banco os demais dados da moeda de valor igual
+				err = db.Updates(cur).Error
+				if err != nil {
+					panic("erro ao alterar dados: " + err.Error())
+				}
+			} else {
+				// Grava no banco a moeda que ainda não existe
+				err = db.Create(&data).Error
+				if err != nil {
+					panic("erro ao inserir dados: " + err.Error())
+				}
+			}
+		}
 	}
 
 }
