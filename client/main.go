@@ -46,11 +46,21 @@ func LeDolarBancoDeDados() {
 		panic(err)
 	}
 
-	var data DollarBR
-	err = json.Unmarshal(response, &data)
+	var bid string
+	err = json.Unmarshal(response, &bid)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "erro ao fazer o parse da resposta: %v\n", err)
 	}
-	fmt.Println(data.USDBRL)
+	fmt.Println("a cotação do dólar é: " + bid)
 
+	// Cria o arquivo cotacao.txt
+	file, err := os.Create("cotacao.txt")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	_, err = file.WriteString("Dólar:{" + bid + "}")
+	if err != nil {
+		panic(err)
+	}
 }
