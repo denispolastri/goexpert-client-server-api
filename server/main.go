@@ -79,7 +79,11 @@ func GravaCotacao(data Dollar) {
 	}
 
 	var currencys []Dollar
-	db.Find(&currencys)
+
+	// corrigir este Find e incluir um where com o camnpo bid, se já estiver cadastrado a cotação com este valor, apenas altera.
+	//db.Find(&currencys)
+	db.Where("bid = ?", data.Bid).Find(&currencys)
+
 	fmt.Println("existem " + strconv.Itoa(len(currencys)) + " moedas cadastradas no banco")
 
 	if len(currencys) == 0 {
@@ -89,8 +93,9 @@ func GravaCotacao(data Dollar) {
 			panic("erro ao inserir dados: " + err.Error())
 		}
 	} else {
+		count := 0
 		for _, cur := range currencys {
-			if cur.Bid == data.Bid {
+			if count == 0 {
 				// Altera no banco os demais dados da moeda de valor igual
 				err = db.Updates(cur).Error
 				if err != nil {
@@ -98,11 +103,12 @@ func GravaCotacao(data Dollar) {
 				}
 			} else {
 				// Grava no banco a moeda que ainda não existe
-				err = db.Create(&data).Error
+				err = db.Delete(&currencys[count]).Error
 				if err != nil {
 					panic("erro ao inserir dados: " + err.Error())
 				}
 			}
+			count++
 		}
 	}
 
