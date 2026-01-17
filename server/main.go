@@ -29,8 +29,6 @@ type DollarBR struct {
 	USDBRL Dollar `json:"USDBRL"`
 }
 
-const urlDolar string = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
-
 func main() {
 
 	// Define valor HTTP_PORT
@@ -44,6 +42,8 @@ func main() {
 
 // Consulta a cotação do dolar
 func ConsultaCotacaoSiteEconomia(w http.ResponseWriter, r *http.Request) {
+
+	var urlDolar string = "https://economia.awesomeapi.com.br/json/last/USD-BRL"
 
 	request, err := http.Get(urlDolar)
 	if err != nil {
