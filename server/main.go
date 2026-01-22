@@ -100,31 +100,12 @@ func GravaCotacao(data Dollar, db *sql.DB) error {
 
 	start := time.Now()
 
-	// Verifica se já expirou antes de iniciar
-	if ctx.Err() != nil {
-		slog.Error("timeout antes de iniciar transação", "error", ctx.Err().Error())
-		duration := time.Since(start)
-		slog.Info("requisição finalizada", "duration_ms", duration.Milliseconds())
-		return ctx.Err()
-	}
-
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		slog.Error("erro ao iniciar transação", "error", err.Error())
 		duration := time.Since(start)
 		slog.Info("requisição finalizada", "duration_ms", duration.Milliseconds())
 		return err
-	}
-
-	// Verifica timeout após iniciar transação
-	select {
-	case <-ctx.Done():
-		tx.Rollback()
-		slog.Error("timeout ao iniciar transação", "error", ctx.Err().Error())
-		duration := time.Since(start)
-		slog.Info("requisição finalizada", "duration_ms", duration.Milliseconds())
-		return ctx.Err()
-	default:
 	}
 
 	query := `INSERT INTO dollars (code, code_in, name, high, low, var_bid, pct_change, bid, ask, timestamp, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
