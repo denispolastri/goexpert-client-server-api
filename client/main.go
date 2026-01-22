@@ -41,6 +41,9 @@ type DollarBR struct {
 
 func LeDolarBancoDeDados() {
 
+	var conteudo string
+	var lErroCotacao bool = false
+
 	start := time.Now()
 
 	request, err := http.Get("http://localhost:8080/cotacao")
@@ -59,9 +62,12 @@ func LeDolarBancoDeDados() {
 	var bid string
 	err = json.Unmarshal(response, &bid)
 	if err != nil {
+		bid = "erro ao ler cotação"
 		slog.Error("erro ao fazer o parse da resposta", "error", err)
+	} else {
+		lErroCotacao = true
+		slog.Info("cotação do dólar lida com sucesso", "bid", bid)
 	}
-	slog.Info("cotação do dólar lida com sucesso", "bid", bid)
 
 	// Cria o arquivo cotacao.txt
 	file, err := os.Create("cotacao.txt")
@@ -69,7 +75,13 @@ func LeDolarBancoDeDados() {
 		slog.Error("erro ao criar o arquivo", "error", err)
 	}
 	defer file.Close()
-	_, err = file.WriteString("Dólar:{" + bid + "}")
+
+	if lErroCotacao {
+		conteudo = "Dólar:{" + bid + "}"
+	} else {
+		conteudo = "Dólar:{erro ao ler cotação}"
+	}
+	_, err = file.WriteString(conteudo)
 	if err != nil {
 		slog.Error("erro ao escrever no arquivo", "error", err)
 	}
