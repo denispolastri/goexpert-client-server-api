@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -41,19 +42,36 @@ type DollarBR struct {
 
 func LeDolarBancoDeDados() {
 
-	var conteudo string
-	var lErroCotacao bool = false
-
 	start := time.Now()
 
-	request, err := http.Get("http://localhost:8080/cotacao")
+	// Cria um contexto com timeout de 300ms
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	// Cria a requisição com o contexto
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://localhost:8080/cotacao", nil)
+	if err != nil {
+		slog.Error("erro ao criar a requisição", "error", err)
+		return
+	}
+
+	// Executa a requisição
+	client := &http.Client{}
+	request, err := client.Do(req)
 	if err != nil {
 		slog.Error("erro ao fazer a requisição", "error", err)
+		// Verifica se o erro foi por timeout
+		if ctx.Err() == context.DeadlineExceeded {
+			slog.Error("timeout: requisição excedeu 300ms")
+		}
+		return
 	}
 	defer request.Body.Close()
+
 	response, err := io.ReadAll(request.Body)
 	if err != nil {
 		slog.Error("erro ao ler o body da resposta", "error", err)
+		return
 	}
 
 	duration := time.Since(start)
@@ -62,10 +80,8 @@ func LeDolarBancoDeDados() {
 	var bid string
 	err = json.Unmarshal(response, &bid)
 	if err != nil {
-		bid = "erro ao ler cotação"
 		slog.Error("erro ao fazer o parse da resposta", "error", err)
 	} else {
-		lErroCotacao = true
 		slog.Info("cotação do dólar lida com sucesso", "bid", bid)
 	}
 
@@ -76,13 +92,11 @@ func LeDolarBancoDeDados() {
 	}
 	defer file.Close()
 
-	if lErroCotacao {
-		conteudo = "Dólar:{" + bid + "}"
-	} else {
-		conteudo = "Dólar:{erro ao ler cotação}"
+	if err == nil {
+		_, err = file.WriteString("Dólar:{" + bid + "}")
+		if err != nil {
+			slog.Error("erro ao escrever no arquivo", "error", err)
+		}
 	}
-	_, err = file.WriteString(conteudo)
-	if err != nil {
-		slog.Error("erro ao escrever no arquivo", "error", err)
-	}
+
 }

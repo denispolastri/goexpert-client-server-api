@@ -111,7 +111,8 @@ func GravaCotacao(data Dollar, db *sql.DB) error {
 	query := `INSERT INTO dollars (code, code_in, name, high, low, var_bid, pct_change, bid, ask, timestamp, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
 	_, err = tx.ExecContext(ctx, query, data.Code, data.CodeIn, data.Name, data.High, data.Low, data.VarBid, data.PctChange, data.Bid, data.Ask, data.Timestamp)
 
-	time.Sleep(9 * time.Millisecond) // Simula demora na execução
+	// Simula demora na execução para teste do banco
+	//time.Sleep(9 * time.Millisecond)
 
 	// Verifica timeout imediatamente após execução
 	if ctx.Err() != nil {
@@ -139,6 +140,9 @@ func GravaCotacao(data Dollar, db *sql.DB) error {
 
 	duration := time.Since(start)
 	slog.Info("requisição finalizada", "duration_ms", duration.Milliseconds())
+
+	// Sleep para simular demora na execução para o timeout do client
+	//time.Sleep(295 * time.Millisecond)
 
 	return nil
 }
